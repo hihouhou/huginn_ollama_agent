@@ -17,6 +17,8 @@ module Agents
 
       `prompt` the prompt to generate a response.
 
+      `image` is a base64-encoded image (for multimodal models such as llava).
+
       `context` the context parameter returned from a previous request to /generate, this can be used to keep a short conversational memory.
 
       `stream` if false the response will be returned as a single response object, rather than a stream of objects.
@@ -140,6 +142,7 @@ module Agents
     form_configurable :model, type: :string
     form_configurable :url, type: :string
     form_configurable :prompt, type: :string
+    form_configurable :image, type: :string
     form_configurable :context, type: :string
     form_configurable :stream, type: :boolean
     form_configurable :raw, type: :boolean
@@ -254,6 +257,7 @@ module Agents
       request_payload['stream'] = boolify(interpolated['stream'])
       request_payload['raw'] = boolify(interpolated['raw'])
       request_payload['context'] = context if !interpolated['context'].empty?
+      request_payload['images'] = ["#{interpolated['image']}"] if !interpolated['image'].empty?
 
       if check_remote_model()
         if interpolated['debug'] == 'true'
@@ -272,6 +276,7 @@ module Agents
 
       req_options = {
         use_ssl: uri.scheme == "https",
+        read_timeout: 120
       }
 
       response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
