@@ -17,7 +17,7 @@ module Agents
 
       `prompt` the prompt to generate a response.
 
-      `image` is a base64-encoded image (for multimodal models such as llava).
+      `image` is a base64-encoded image or URL (for multimodal models such as llava).
 
       `context` the context parameter returned from a previous request to /generate, this can be used to keep a short conversational memory.
 
@@ -249,6 +249,38 @@ module Agents
       false
     end
 
+    def encode_to_base64(data)
+      return Base64.strict_encode64(data)
+    end
+
+    def download_and_convert_to_base64(url)
+      begin
+        uri = URI(url)
+        response = Net::HTTP.get_response(uri)
+
+        log_curl_output(response.code,response.body)
+
+        if response.is_a?(Net::HTTPSuccess)
+          file_data = response.body
+          base64_data = encode_to_base64(file_data)
+          return base64_data
+        end
+      end
+    end
+
+    def detect_image_source(input)
+      if input =~ URI::DEFAULT_PARSER.regexp[:ABS_URI]
+        download_and_convert_to_base64(interpolated['image'])
+      elsif input.match?(/\A(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?\z/)
+        begin
+          decoded = Base64.strict_decode64(input)
+          if Base64.strict_encode64(decoded) == input
+            return input
+          end
+        end
+      end
+    end
+
     def generate_completion()
 
       request_payload = {}
@@ -257,7 +289,7 @@ module Agents
       request_payload['stream'] = boolify(interpolated['stream'])
       request_payload['raw'] = boolify(interpolated['raw'])
       request_payload['context'] = context if !interpolated['context'].empty?
-      request_payload['images'] = ["#{interpolated['image']}"] if !interpolated['image'].empty?
+      request_payload['images'] = ["#{detect_image_source(interpolated['image'])}"] if !interpolated['image'].empty?
 
       if check_remote_model()
         if interpolated['debug'] == 'true'
