@@ -243,7 +243,7 @@ module Agents
 
       payload = JSON.parse(response.body)
       payload['models'].each do |modele|
-        return true if modele['name'] == interpolated['model'] + ':latest'
+        return true if modele['name'] == interpolated['model']
       end
 
       false
