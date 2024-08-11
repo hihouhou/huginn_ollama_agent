@@ -288,7 +288,7 @@ module Agents
       request_payload['prompt'] = interpolated['prompt']
       request_payload['stream'] = boolify(interpolated['stream'])
       request_payload['raw'] = boolify(interpolated['raw'])
-      request_payload['context'] = context if !interpolated['context'].empty?
+      request_payload['context'] = interpolated['context'].split(',').map(&:strip).map(&:to_i) if !interpolated['context'].empty?
       request_payload['images'] = ["#{detect_image_source(interpolated['image'])}"] if !interpolated['image'].empty?
 
       if check_remote_model()
